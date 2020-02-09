@@ -1,0 +1,24 @@
+sudo: required
+services:
+  - docker
+
+# First, build the dev image to get access to test suites
+before_install:
+  - docker build -t jbvance/react-test -f ./client/Dockerfile.dev ./client
+
+# Run test script(s)
+script:
+  - docker run jbvance/react-test npm test -- --coverage
+
+after_success:
+  - docker build -t jbvance/multi-client ./client
+  - docker build -t jbvance/multi-nginx ./nginx
+  - docker build -t jbvance/multi-server ./server
+  - docker build -t jbvance/multi-worker ./worker
+  # Log in to Docker CLI
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+  # Push the images to Docker Hub
+  - docker push jbvance/multi-client
+  - docker push jbvance/multi-nginx
+  - docker push jbvance/multi-server
+  - docker push jbvance/multi-worker
